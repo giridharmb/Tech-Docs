@@ -707,3 +707,274 @@ We welcome contributions to improve this explanation. Please submit pull request
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+## GRPC Server And Client
+
+# gRPC Server and Client in Go
+
+## Overview
+
+This repository demonstrates how to implement a gRPC server and client in Go, showcasing all four types of gRPC communication methods. gRPC is a high-performance, open-source framework developed by Google for remote procedure calls (RPC).
+
+## What is gRPC?
+
+gRPC (gRPC Remote Procedure Call) is a modern, open-source framework that enables efficient communication between distributed systems. It uses Protocol Buffers as its interface definition language and underlying message interchange format.
+
+## gRPC Communication Types
+
+gRPC supports four types of communication:
+
+1. **Unary RPC**: Client sends a single request and receives a single response.
+2. **Server Streaming RPC**: Client sends a single request and receives a stream of responses.
+3. **Client Streaming RPC**: Client sends a stream of requests and receives a single response.
+4. **Bidirectional Streaming RPC**: Both client and server send streams of messages to each other.
+
+## Project Structure
+
+```
+.
+├── main.go
+├── echo.proto
+└── README.md
+```
+
+## Prerequisites
+
+- Go 1.15+
+- Protocol Buffers compiler (`protoc`)
+- Go plugins for Protocol Buffers and gRPC
+
+## Setup
+
+1. Install the required Go packages:
+   ```
+   go get google.golang.org/grpc
+   go get google.golang.org/protobuf/cmd/protoc-gen-go
+   go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
+   ```
+
+2. Generate Go code from the `.proto` file:
+   ```
+   protoc --go_out=. --go-grpc_out=. echo.proto
+   ```
+
+## Running the Example
+
+1. Start the server and client:
+   ```
+   go run main.go
+   ```
+
+This will start the gRPC server and then run the client, demonstrating all four types of gRPC communication.
+
+## Code Explanation
+
+### Server Implementation
+
+The server implements four methods corresponding to the four types of gRPC communication:
+
+- `UnaryEcho`: Demonstrates Unary RPC
+- `ServerStreamingEcho`: Demonstrates Server Streaming RPC
+- `ClientStreamingEcho`: Demonstrates Client Streaming RPC
+- `BidirectionalStreamingEcho`: Demonstrates Bidirectional Streaming RPC
+
+### Client Implementation
+
+The client demonstrates how to use each type of gRPC communication:
+
+- Unary RPC: Single request and response
+- Server Streaming RPC: Receives multiple responses in a loop
+- Client Streaming RPC: Sends multiple requests in a loop
+- Bidirectional Streaming RPC: Sends and receives streams concurrently using goroutines
+
+## Key Points
+
+- gRPC uses Protocol Buffers for efficient serialization.
+- It runs over HTTP/2, allowing for features like multiplexing and header compression.
+- The server implements the service interface generated from the `.proto` file.
+- The client uses a generated stub to make RPC calls.
+- Error handling is done using the `status` package, which provides gRPC-specific error codes.
+
+## Further Reading
+
+- [gRPC Documentation](https://grpc.io/docs/)
+- [Protocol Buffers Documentation](https://developers.google.com/protocol-buffers)
+- [gRPC-Go GitHub Repository](https://github.com/grpc/grpc-go)
+
+## Contributing
+
+Contributions to improve the example or documentation are welcome. Please submit a pull request or open an issue to discuss proposed changes.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+```go
+// File: main.go
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
+)
+
+// Assuming you have already generated the gRPC code from your .proto file
+// For this example, we'll define the service and messages inline
+
+type EchoService struct {
+	UnimplementedEchoServiceServer
+}
+
+func (s *EchoService) UnaryEcho(ctx context.Context, req *EchoRequest) (*EchoResponse, error) {
+	return &EchoResponse{Message: req.Message}, nil
+}
+
+func (s *EchoService) ServerStreamingEcho(req *EchoRequest, stream EchoService_ServerStreamingEchoServer) error {
+	for i := 0; i < 5; i++ {
+		if err := stream.Send(&EchoResponse{Message: fmt.Sprintf("%s %d", req.Message, i)}); err != nil {
+			return err
+		}
+		time.Sleep(time.Second)
+	}
+	return nil
+}
+
+func (s *EchoService) ClientStreamingEcho(stream EchoService_ClientStreamingEchoServer) error {
+	var messages []string
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&EchoResponse{Message: fmt.Sprintf("Received: %v", messages)})
+		}
+		if err != nil {
+			return err
+		}
+		messages = append(messages, req.Message)
+	}
+}
+
+func (s *EchoService) BidirectionalStreamingEcho(stream EchoService_BidirectionalStreamingEchoServer) error {
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if err := stream.Send(&EchoResponse{Message: req.Message}); err != nil {
+			return err
+		}
+	}
+}
+
+func main() {
+	// Start the server
+	go startServer()
+
+	// Wait for the server to start
+	time.Sleep(time.Second)
+
+	// Run the client
+	runClient()
+}
+
+func startServer() {
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+	RegisterEchoServiceServer(s, &EchoService{})
+	log.Println("Starting gRPC server on port 50051")
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+}
+
+func runClient() {
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+
+	client := NewEchoServiceClient(conn)
+
+	// Unary RPC
+	resp, err := client.UnaryEcho(context.Background(), &EchoRequest{Message: "Hello, Unary!"})
+	if err != nil {
+		log.Fatalf("UnaryEcho error: %v", err)
+	}
+	log.Printf("UnaryEcho response: %s", resp.Message)
+
+	// Server Streaming RPC
+	stream, err := client.ServerStreamingEcho(context.Background(), &EchoRequest{Message: "Hello, Server Streaming!"})
+	if err != nil {
+		log.Fatalf("ServerStreamingEcho error: %v", err)
+	}
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("ServerStreamingEcho stream error: %v", err)
+		}
+		log.Printf("ServerStreamingEcho response: %s", resp.Message)
+	}
+
+	// Client Streaming RPC
+	clientStream, err := client.ClientStreamingEcho(context.Background())
+	if err != nil {
+		log.Fatalf("ClientStreamingEcho error: %v", err)
+	}
+	for i := 0; i < 5; i++ {
+		if err := clientStream.Send(&EchoRequest{Message: fmt.Sprintf("Hello, Client Streaming %d!", i)}); err != nil {
+			log.Fatalf("ClientStreamingEcho send error: %v", err)
+		}
+	}
+	resp, err = clientStream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("ClientStreamingEcho close error: %v", err)
+	}
+	log.Printf("ClientStreamingEcho response: %s", resp.Message)
+
+	// Bidirectional Streaming RPC
+	bidiStream, err := client.BidirectionalStreamingEcho(context.Background())
+	if err != nil {
+		log.Fatalf("BidirectionalStreamingEcho error: %v", err)
+	}
+	waitc := make(chan struct{})
+	go func() {
+		for {
+			resp, err := bidiStream.Recv()
+			if err == io.EOF {
+				close(waitc)
+				return
+			}
+			if err != nil {
+				log.Fatalf("BidirectionalStreamingEcho receive error: %v", err)
+			}
+			log.Printf("BidirectionalStreamingEcho response: %s", resp.Message)
+		}
+	}()
+	for i := 0; i < 5; i++ {
+		if err := bidiStream.Send(&EchoRequest{Message: fmt.Sprintf("Hello, Bidi Streaming %d!", i)}); err != nil {
+			log.Fatalf("BidirectionalStreamingEcho send error: %v", err)
+		}
+	}
+	bidiStream.CloseSend()
+	<-waitc
+}
+```
