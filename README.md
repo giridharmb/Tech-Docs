@@ -196,3 +196,180 @@
 - **Complexity vs. Performance:** Always consider if the performance gain justifies the added complexity of async code.
 - **Scalability:** Async often shines in high-concurrency scenarios, regardless of the task type.
 - **Resource Management:** Async can help manage limited resources (like file descriptors or database connections) more efficiently.
+
+# Best Performance Approaches by Task Type and Language
+
+## Rust
+
+### CPU-bound Tasks
+- **Best Approach:** Use native threads with `std::thread`
+- **Why:** Rust's zero-cost abstractions and lack of runtime overhead make native threads very efficient
+- **Example:**
+  ```rust
+  use std::thread;
+
+  fn main() {
+      let handles: Vec<_> = (0..num_cpus::get()).map(|_| {
+          thread::spawn(|| {
+              // CPU intensive work here
+          })
+      }).collect();
+
+      for handle in handles {
+          handle.join().unwrap();
+      }
+  }
+  ```
+
+### Network-bound Tasks
+- **Best Approach:** Async with Tokio or async-std
+- **Why:** Efficient handling of many concurrent connections with minimal overhead
+- **Example (with Tokio):**
+  ```rust
+  use tokio;
+
+  #[tokio::main]
+  async fn main() {
+      let handles = (0..1000).map(|_| {
+          tokio::spawn(async {
+              // Network operation here
+          })
+      }).collect::<Vec<_>>();
+
+      for handle in handles {
+          handle.await.unwrap();
+      }
+  }
+  ```
+
+### Disk I/O-bound Tasks
+- **Best Approach:** Async with Tokio or async-std for many small operations, native threads for fewer, larger operations
+- **Why:** Async is efficient for many concurrent small I/O operations, while threads work well for larger, less frequent operations
+- **Example (Async with Tokio):**
+  ```rust
+  use tokio::fs::File;
+  use tokio::io::AsyncReadExt;
+
+  #[tokio::main]
+  async fn main() -> Result<(), Box<dyn std::error::Error>> {
+      let mut file = File::open("foo.txt").await?;
+      let mut contents = vec![];
+      file.read_to_end(&mut contents).await?;
+      Ok(())
+  }
+  ```
+
+## Go (Golang)
+
+### CPU-bound Tasks
+- **Best Approach:** Goroutines
+- **Why:** Go's runtime efficiently schedules goroutines across available CPU cores
+- **Example:**
+  ```go
+  import "runtime"
+
+  func main() {
+      numCPU := runtime.NumCPU()
+      runtime.GOMAXPROCS(numCPU)
+
+      for i := 0; i < numCPU; i++ {
+          go func() {
+              // CPU intensive work here
+          }()
+      }
+      // Wait for goroutines to finish
+  }
+  ```
+
+### Network-bound Tasks
+- **Best Approach:** Goroutines with standard library's net package
+- **Why:** Go's concurrency model is well-suited for handling many network connections efficiently
+- **Example:**
+  ```go
+  import "net/http"
+
+  func main() {
+      http.HandleFunc("/", handler)
+      http.ListenAndServe(":8080", nil)
+  }
+
+  func handler(w http.ResponseWriter, r *http.Request) {
+      // Handle request
+  }
+  ```
+
+### Disk I/O-bound Tasks
+- **Best Approach:** Goroutines
+- **Why:** Go's standard library uses non-blocking I/O under the hood, making goroutines efficient for both small and large I/O operations
+- **Example:**
+  ```go
+  import "os"
+
+  func main() {
+      go func() {
+          file, _ := os.Open("file.txt")
+          defer file.Close()
+          // Read file
+      }()
+      // Do other work
+  }
+  ```
+
+## Python
+
+### CPU-bound Tasks
+- **Best Approach:** multiprocessing
+- **Why:** Bypasses the Global Interpreter Lock (GIL), allowing true parallelism
+- **Example:**
+  ```python
+  from multiprocessing import Pool
+
+  def cpu_bound_task(x):
+      # CPU intensive work here
+      return result
+
+  if __name__ == '__main__':
+      with Pool() as p:
+          results = p.map(cpu_bound_task, range(10))
+  ```
+
+### Network-bound Tasks
+- **Best Approach:** asyncio
+- **Why:** Efficiently handles many concurrent connections without the overhead of threads
+- **Example:**
+  ```python
+  import asyncio
+  import aiohttp
+
+  async def fetch(url):
+      async with aiohttp.ClientSession() as session:
+          async with session.get(url) as response:
+              return await response.text()
+
+  async def main():
+      urls = ['http://example.com' for _ in range(100)]
+      tasks = [asyncio.create_task(fetch(url)) for url in urls]
+      results = await asyncio.gather(*tasks)
+
+  asyncio.run(main())
+  ```
+
+### Disk I/O-bound Tasks
+- **Best Approach:** asyncio for many small operations, multiprocessing for fewer, larger operations
+- **Why:** asyncio is efficient for concurrent small I/O, while multiprocessing helps with larger operations that might block
+- **Example (asyncio):**
+  ```python
+  import asyncio
+  import aiofiles
+
+  async def read_file(filename):
+      async with aiofiles.open(filename, mode='r') as file:
+          return await file.read()
+
+  async def main():
+      filenames = ['file1.txt', 'file2.txt', 'file3.txt']
+      tasks = [asyncio.create_task(read_file(filename)) for filename in filenames]
+      results = await asyncio.gather(*tasks)
+
+  asyncio.run(main())
+  ```
