@@ -520,3 +520,116 @@ We welcome contributions to improve this explanation. Please submit pull request
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+# Software Licensing Models: A Comparison
+
+## 1. Open Source Licenses
+
+### GNU General Public License (GPL)
+**Pros:**
+- Ensures software remains free and open
+- Promotes sharing and collaboration
+- Protects user freedoms
+
+**Cons:**
+- Can be restrictive for commercial use
+- May discourage some businesses from using the software
+
+### MIT License
+**Pros:**
+- Very permissive
+- Simple and easy to understand
+- Allows commercial use and modification
+
+**Cons:**
+- Provides little protection for the original author
+- Derivative works can be made proprietary
+
+### Apache License 2.0
+**Pros:**
+- Permissive for commercial use
+- Includes patent license
+- Compatible with GPL v3
+
+**Cons:**
+- More complex than MIT or BSD licenses
+- May require including a copy of the license with distribution
+
+## 2. Proprietary Licenses
+
+### Commercial Software License
+**Pros:**
+- Provides revenue for developers
+- Can offer specialized support and features
+
+**Cons:**
+- Restricts user freedoms
+- Often more expensive for users
+- Source code typically not available
+
+### Shareware
+**Pros:**
+- Allows users to try before buying
+- Can lead to wider distribution
+
+**Cons:**
+- Limited functionality in free version
+- May have time restrictions
+
+## 3. Hybrid Licenses
+
+### Dual Licensing
+**Pros:**
+- Offers flexibility for different users
+- Can generate revenue while still offering open source option
+
+**Cons:**
+- Can be complex to manage
+- May confuse users
+
+### Freemium
+**Pros:**
+- Attracts users with free basic version
+- Can convert free users to paying customers
+
+**Cons:**
+- Must balance free and paid features carefully
+- May limit growth of paid user base
+
+## 4. Creative Commons Licenses
+
+### CC BY (Attribution)
+**Pros:**
+- Allows wide use while requiring attribution
+- Simple to understand and implement
+
+**Cons:**
+- Doesn't prevent commercial use (if that's a concern)
+- Doesn't protect against misuse or misrepresentation
+
+### CC BY-SA (Attribution-ShareAlike)
+**Pros:**
+- Ensures derivatives are shared under the same terms
+- Promotes open collaboration
+
+**Cons:**
+- Can be restrictive for some commercial uses
+- May limit adoption in certain contexts
+
+## 5. Public Domain (e.g., CC0)
+
+**Pros:**
+- Maximum freedom for users
+- No restrictions on use or modification
+
+**Cons:**
+- No protection for the original creator
+- Potential for misuse without attribution
+
+## Key Considerations
+- **Commercial vs. Non-Commercial Use:** Some licenses restrict commercial use, while others allow it.
+- **Derivative Works:** Consider whether you want to allow modifications and under what terms.
+- **Patent Rights:** Some licenses (like Apache 2.0) explicitly address patent rights.
+- **Compatibility:** Ensure the license is compatible with other software or libraries you're using.
+- **Community Building:** Some licenses are better for building open-source communities.
+- **Legal Protection:** Consider the level of legal protection you need for your software.
