@@ -373,3 +373,75 @@
 
   asyncio.run(main())
   ```
+
+#### TCP 3 Way Handshake
+
+# TCP 3-Way Handshake
+
+## Overview
+
+This repository explains the TCP (Transmission Control Protocol) 3-way handshake process, a fundamental mechanism used to establish a connection between a client and a server in TCP/IP networks.
+
+## What is the TCP 3-Way Handshake?
+
+The TCP 3-way handshake is a procedure used to establish a reliable connection between two devices before data transmission begins. It ensures that both sides are ready to communicate and agree on the initial sequence numbers for the connection.
+
+## Process
+
+The handshake involves three steps:
+
+1. **SYN (Synchronize)**
+2. **SYN-ACK (Synchronize-Acknowledge)**
+3. **ACK (Acknowledge)**
+
+## Detailed Explanation
+
+### Step 1: SYN
+
+- The client initiates the connection by sending a SYN packet to the server.
+- This packet contains an initial sequence number (x).
+- The SYN flag in the TCP header is set to 1.
+
+### Step 2: SYN-ACK
+
+- Upon receiving the SYN packet, the server responds with a SYN-ACK packet.
+- This packet acknowledges the client's SYN and includes the server's own initial sequence number (y).
+- The ACK number is set to the client's sequence number plus one (x+1).
+- Both SYN and ACK flags are set to 1 in the TCP header.
+
+### Step 3: ACK
+
+- The client receives the SYN-ACK and sends back an ACK packet to acknowledge the server's response.
+- The sequence number is set to x+1 (the ACK number received from the server).
+- The ACK number is set to y+1 (the server's sequence number plus one).
+- The ACK flag is set to 1, while the SYN flag is set to 0.
+
+After these three steps, the connection is established, and both the client and server can begin sending data.
+
+## Key Points
+
+- Ensures both sides are ready to communicate
+- Prevents old duplicate connections from being established
+- Allows both sides to agree on the Maximum Segment Size (MSS) for the connection
+- Designed to work reliably even if packets are lost, delayed, or duplicated
+
+## Importance
+
+The TCP 3-way handshake is crucial for:
+
+- Establishing reliable connections
+- Ensuring ordered delivery of data
+- Setting the foundation for handling potential issues like packet loss, reordering, and duplication during data transfer
+
+## Further Reading
+
+- [RFC 793: Transmission Control Protocol](https://tools.ietf.org/html/rfc793)
+- [TCP/IP Guide](http://www.tcpipguide.com/free/t_TCPConnectionEstablishmentProcessTheThreeWayHandsh.htm)
+
+## Contributing
+
+Feel free to contribute to this explanation by submitting pull requests or opening issues for any corrections or additional information.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
