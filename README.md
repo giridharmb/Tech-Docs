@@ -445,3 +445,78 @@ Feel free to contribute to this explanation by submitting pull requests or openi
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+#### DNS Resolver
+
+# DNS Resolving Process
+
+## Overview
+
+This repository explains the Domain Name System (DNS) resolving process, a fundamental mechanism used to translate human-readable domain names into IP addresses that computers use to identify each other on the internet.
+
+## What is DNS Resolving?
+
+DNS resolving is the process of converting a domain name (like www.example.com) into an IP address (like 192.0.2.1). This translation is crucial for navigating the internet, as it allows users to use memorable domain names while computers communicate using numerical IP addresses.
+
+## Detailed Explanation
+
+The DNS resolving process typically involves the following steps:
+
+1. **Client Query**
+   - User enters a domain name in their browser
+   - Computer checks its local DNS cache
+   - If not found, sends a query to the Local DNS Resolver
+
+2. **Local DNS Resolver**
+   - Checks its own cache for the IP address
+   - If not found, initiates a recursive query process
+
+3. **Root DNS Servers**
+   - Local DNS Resolver queries a Root DNS Server
+   - Root Server provides referral to relevant Top-Level Domain (TLD) DNS servers
+
+4. **TLD DNS Servers**
+   - Resolver queries the TLD DNS server
+   - TLD server provides the address of the Authoritative DNS server for the domain
+
+5. **Authoritative DNS Server**
+   - Resolver queries the Authoritative DNS server
+   - This server returns the actual IP address for the requested domain
+
+6. **Resolution Complete**
+   - Local DNS Resolver caches the IP address
+   - Resolver returns the IP address to the client's computer
+
+7. **Client Receives IP**
+   - Computer receives the IP address
+   - Can now establish a connection with the web server at that IP address
+
+## Key Points
+
+- Hierarchical system of servers distributes the load and maintains efficiency
+- Caching occurs at multiple levels to speed up future requests
+- Process typically takes only milliseconds to complete
+- DNS primarily uses UDP for queries and responses, with TCP as a fallback
+- Security measures like DNSSEC can ensure integrity and authenticity of responses
+
+## Importance of DNS
+
+DNS is critical to the functioning of the internet because it:
+- Allows the use of human-readable domain names
+- Provides a distributed, scalable system for name resolution
+- Enables load balancing and fault tolerance for web services
+- Supports email routing and other internet services
+
+## Further Reading
+
+- [RFC 1034: Domain Names - Concepts and Facilities](https://tools.ietf.org/html/rfc1034)
+- [RFC 1035: Domain Names - Implementation and Specification](https://tools.ietf.org/html/rfc1035)
+- [DNS Security Extensions (DNSSEC)](https://www.icann.org/resources/pages/dnssec-qaa-2014-01-29-en)
+
+## Contributing
+
+We welcome contributions to improve this explanation. Please submit pull requests or open issues for any corrections or additional information.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
