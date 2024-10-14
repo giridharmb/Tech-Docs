@@ -978,3 +978,314 @@ func runClient() {
 	<-waitc
 }
 ```
+
+#### JSON & GRPC
+
+# gRPC JSON Exchange in Go
+
+## Overview
+
+This project demonstrates how to implement a gRPC server and client in Go that can exchange JSON data (represented as `map[string]interface{}`) using all four gRPC communication methods: Unary, Server Streaming, Client Streaming, and Bidirectional Streaming.
+
+## Features
+
+- Implements all four gRPC communication methods
+- Exchanges arbitrary JSON data using `google.protobuf.Struct`
+- Demonstrates conversion between Go's `map[string]interface{}` and Protocol Buffers' `Struct`
+
+## Prerequisites
+
+- Go 1.15+
+- Protocol Buffers compiler (`protoc`)
+- Go plugins for Protocol Buffers and gRPC
+
+## Project Structure
+
+```
+.
+├── json_exchange.proto
+├── main.go
+└── README.md
+```
+
+## Setup
+
+1. Install the required Go packages:
+   ```
+   go get google.golang.org/grpc
+   go get google.golang.org/protobuf/types/known/structpb
+   ```
+
+2. Generate Go code from the `.proto` file:
+   ```
+   protoc --go_out=. --go-grpc_out=. json_exchange.proto
+   ```
+
+## Running the Example
+
+1. Start the server and client:
+   ```
+   go run main.go
+   ```
+
+This will start the gRPC server and then run the client, demonstrating all four types of gRPC communication with JSON data.
+
+## Code Explanation
+
+### Protocol Buffer Definition (json_exchange.proto)
+
+The `.proto` file defines the service `JSONExchange` with four RPC methods, one for each communication type. It uses `google.protobuf.Struct` to represent JSON data.
+
+### Server Implementation
+
+The server implements four methods:
+
+- `UnaryExchange`: Receives a JSON object, modifies it, and returns it.
+- `ServerStreamingExchange`: Receives a JSON object and sends back multiple modified versions.
+- `ClientStreamingExchange`: Receives multiple JSON objects and returns a single aggregated result.
+- `BidirectionalStreamingExchange`: Continuously receives and sends JSON objects.
+
+### Client Implementation
+
+The client demonstrates how to:
+
+- Send and receive JSON data for each type of RPC.
+- Handle streaming data in both directions.
+- Convert between `map[string]interface{}` and `*structpb.Struct`.
+
+## Key Points
+
+- We use `structpb.NewStruct()` to convert `map[string]interface{}` to `*structpb.Struct`.
+- `AsMap()` is used to convert `*structpb.Struct` back to `map[string]interface{}`.
+- Error handling is crucial, especially when dealing with data conversion and streaming.
+- The server demonstrates different ways of processing and modifying the received JSON data.
+- The client showcases how to send, receive, and process JSON data for each RPC type.
+
+## Use Cases
+
+This implementation can be useful for:
+
+- Microservices that need to exchange complex, dynamic JSON data.
+- Systems that require flexible data structures in their communication.
+- Applications that need to stream large amounts of JSON data in real-time.
+
+## Further Reading
+
+- [gRPC Documentation](https://grpc.io/docs/)
+- [Protocol Buffers Documentation](https://developers.google.com/protocol-buffers)
+- [Go Struct Type in Protocol Buffers](https://pkg.go.dev/google.golang.org/protobuf/types/known/structpb)
+
+## Contributing
+
+Contributions to improve the example or documentation are welcome. Please submit a pull request or open an issue to discuss proposed changes.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net"
+
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	pb "path/to/your/generated/proto" // Replace with the actual path
+)
+
+type server struct {
+	pb.UnimplementedJSONExchangeServer
+}
+
+// Unary RPC
+func (s *server) UnaryExchange(ctx context.Context, req *pb.JSONRequest) (*pb.JSONResponse, error) {
+	// Convert Struct back to map[string]interface{}
+	data := req.Data.AsMap()
+	fmt.Printf("Received: %v\n", data)
+
+	// Modify the data (for demonstration)
+	data["server_added"] = "This was added by the server"
+
+	// Convert back to Struct
+	newStruct, err := structpb.NewStruct(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.JSONResponse{Data: newStruct}, nil
+}
+
+// Server Streaming RPC
+func (s *server) ServerStreamingExchange(req *pb.JSONRequest, stream pb.JSONExchange_ServerStreamingExchangeServer) error {
+	data := req.Data.AsMap()
+	for i := 0; i < 5; i++ {
+		data["count"] = i
+		newStruct, err := structpb.NewStruct(data)
+		if err != nil {
+			return err
+		}
+		if err := stream.Send(&pb.JSONResponse{Data: newStruct}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Client Streaming RPC
+func (s *server) ClientStreamingExchange(stream pb.JSONExchange_ClientStreamingExchangeServer) error {
+	var result map[string]interface{}
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			newStruct, err := structpb.NewStruct(result)
+			if err != nil {
+				return err
+			}
+			return stream.SendAndClose(&pb.JSONResponse{Data: newStruct})
+		}
+		if err != nil {
+			return err
+		}
+		// Merge the received data
+		for k, v := range req.Data.AsMap() {
+			result[k] = v
+		}
+	}
+}
+
+// Bidirectional Streaming RPC
+func (s *server) BidirectionalStreamingExchange(stream pb.JSONExchange_BidirectionalStreamingExchangeServer) error {
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		data := req.Data.AsMap()
+		data["server_processed"] = true
+		newStruct, err := structpb.NewStruct(data)
+		if err != nil {
+			return err
+		}
+		if err := stream.Send(&pb.JSONResponse{Data: newStruct}); err != nil {
+			return err
+		}
+	}
+}
+
+func main() {
+	// Start server
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+	pb.RegisterJSONExchangeServer(s, &server{})
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	// Client code
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	client := pb.NewJSONExchangeClient(conn)
+
+	// Unary RPC
+	data := map[string]interface{}{
+		"message": "Hello, Server!",
+		"number":  42,
+	}
+	jsonStruct, err := structpb.NewStruct(data)
+	if err != nil {
+		log.Fatalf("failed to create struct: %v", err)
+	}
+	resp, err := client.UnaryExchange(context.Background(), &pb.JSONRequest{Data: jsonStruct})
+	if err != nil {
+		log.Fatalf("UnaryExchange failed: %v", err)
+	}
+	fmt.Printf("UnaryExchange response: %v\n", resp.Data.AsMap())
+
+	// Server Streaming RPC
+	stream, err := client.ServerStreamingExchange(context.Background(), &pb.JSONRequest{Data: jsonStruct})
+	if err != nil {
+		log.Fatalf("ServerStreamingExchange failed: %v", err)
+	}
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("failed to receive response: %v", err)
+		}
+		fmt.Printf("ServerStreamingExchange received: %v\n", resp.Data.AsMap())
+	}
+
+	// Client Streaming RPC
+	clientStream, err := client.ClientStreamingExchange(context.Background())
+	if err != nil {
+		log.Fatalf("ClientStreamingExchange failed: %v", err)
+	}
+	for i := 0; i < 5; i++ {
+		data["count"] = i
+		jsonStruct, err := structpb.NewStruct(data)
+		if err != nil {
+			log.Fatalf("failed to create struct: %v", err)
+		}
+		if err := clientStream.Send(&pb.JSONRequest{Data: jsonStruct}); err != nil {
+			log.Fatalf("failed to send request: %v", err)
+		}
+	}
+	resp, err = clientStream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("failed to receive response: %v", err)
+	}
+	fmt.Printf("ClientStreamingExchange response: %v\n", resp.Data.AsMap())
+
+	// Bidirectional Streaming RPC
+	bidiStream, err := client.BidirectionalStreamingExchange(context.Background())
+	if err != nil {
+		log.Fatalf("BidirectionalStreamingExchange failed: %v", err)
+	}
+	waitc := make(chan struct{})
+	go func() {
+		for {
+			resp, err := bidiStream.Recv()
+			if err == io.EOF {
+				close(waitc)
+				return
+			}
+			if err != nil {
+				log.Fatalf("failed to receive response: %v", err)
+			}
+			fmt.Printf("BidirectionalStreamingExchange received: %v\n", resp.Data.AsMap())
+		}
+	}()
+	for i := 0; i < 5; i++ {
+		data["count"] = i
+		jsonStruct, err := structpb.NewStruct(data)
+		if err != nil {
+			log.Fatalf("failed to create struct: %v", err)
+		}
+		if err := bidiStream.Send(&pb.JSONRequest{Data: jsonStruct}); err != nil {
+			log.Fatalf("failed to send request: %v", err)
+		}
+	}
+	bidiStream.CloseSend()
+	<-waitc
+}
+```
