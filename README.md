@@ -809,6 +809,41 @@ Contributions to improve the example or documentation are welcome. Please submit
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
+`protoc --go_out=. --go-grpc_out=. echo.proto`
+
+`echo.proto`
+
+```go
+// echo.proto
+syntax = "proto3";
+
+package echo;
+
+option go_package = "./echo";
+
+service EchoService {
+  // Unary RPC
+  rpc UnaryEcho(EchoRequest) returns (EchoResponse) {}
+
+  // Server Streaming RPC
+  rpc ServerStreamingEcho(EchoRequest) returns (stream EchoResponse) {}
+
+  // Client Streaming RPC
+  rpc ClientStreamingEcho(stream EchoRequest) returns (EchoResponse) {}
+
+  // Bidirectional Streaming RPC
+  rpc BidirectionalStreamingEcho(stream EchoRequest) returns (stream EchoResponse) {}
+}
+
+message EchoRequest {
+  string message = 1;
+}
+
+message EchoResponse {
+  string message = 1;
+}
+```
+
 ```go
 // File: main.go
 
@@ -981,6 +1016,111 @@ func runClient() {
 
 #### JSON & GRPC
 
+# gRPC JSON Exchange Service
+
+This project implements a gRPC service for exchanging JSON data using all four types of gRPC communication methods: Unary, Server Streaming, Client Streaming, and Bidirectional Streaming.
+
+## Project Structure
+
+```
+.
+├── json_exchange.proto
+├── main.go
+└── README.md
+```
+
+## Prerequisites
+
+- Go 1.15+
+- Protocol Buffers compiler (`protoc`)
+- Go plugins for Protocol Buffers and gRPC
+
+## Setup
+
+1. Install the required Go packages:
+   ```
+   go get google.golang.org/grpc
+   go get google.golang.org/protobuf/types/known/structpb
+   ```
+
+2. Install the Protocol Buffers compiler (protoc) and the Go plugin:
+   ```
+   go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+   go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+   ```
+
+## Generating Go Code from Protocol Buffers
+
+1. Ensure `json_exchange.proto` is in your project directory.
+
+2. Run the following command to generate Go code:
+   ```
+   protoc --go_out=. --go-grpc_out=. json_exchange.proto
+   ```
+
+This command does the following:
+- `--go_out=.`: Generates Go code for the message types and places it in the current directory.
+- `--go-grpc_out=.`: Generates Go code for the gRPC service and places it in the current directory.
+
+After running this command, you'll see two new files:
+- `json_exchange.pb.go`: Contains Go struct definitions for your messages.
+- `json_exchange_grpc.pb.go`: Contains gRPC client and server code.
+
+## Implementing the Service
+
+1. Create a new Go file (e.g., `main.go`) to implement your server:
+
+   ```go
+   package main
+
+   import (
+       pb "path/to/generated/code"
+       // other necessary imports
+   )
+
+   type server struct {
+       pb.UnimplementedJSONExchangeServer
+   }
+
+   // Implement the methods of the JSONExchangeServer interface
+   // (UnaryExchange, ServerStreamingExchange, ClientStreamingExchange, BidirectionalStreamingExchange)
+
+   func main() {
+       // Set up your gRPC server and register your service
+   }
+   ```
+
+2. Implement the client in the same file or a separate file, using the generated client stub.
+
+## Running the Service
+
+1. Build your Go application:
+   ```
+   go build -o json_exchange_service
+   ```
+
+2. Run the server:
+   ```
+   ./json_exchange_service
+   ```
+
+3. Implement and run a client to interact with your service.
+
+## Next Steps
+
+- Add error handling and logging to your implementation.
+- Implement authentication and authorization if needed.
+- Consider adding tests for your service implementation.
+- Deploy your service to a production environment.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
 # gRPC JSON Exchange in Go
 
 ## Overview
@@ -1082,6 +1222,43 @@ Contributions to improve the example or documentation are welcome. Please submit
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+`protoc --go_out=. --go-grpc_out=. json_exchange.proto`
+
+`json_exchange.proto`
+
+```go
+// json_exchange.proto
+syntax = "proto3";
+
+package jsonexchange;
+
+option go_package = "./jsonexchange";
+
+import "google/protobuf/struct.proto";
+
+service JSONExchange {
+  // Unary RPC
+  rpc UnaryExchange (JSONRequest) returns (JSONResponse) {}
+
+  // Server Streaming RPC
+  rpc ServerStreamingExchange (JSONRequest) returns (stream JSONResponse) {}
+
+  // Client Streaming RPC
+  rpc ClientStreamingExchange (stream JSONRequest) returns (JSONResponse) {}
+
+  // Bidirectional Streaming RPC
+  rpc BidirectionalStreamingExchange (stream JSONRequest) returns (stream JSONResponse) {}
+}
+
+message JSONRequest {
+  google.protobuf.Struct data = 1;
+}
+
+message JSONResponse {
+  google.protobuf.Struct data = 1;
+}
+```
 
 ```go
 package main
@@ -1287,5 +1464,144 @@ func main() {
 	}
 	bidiStream.CloseSend()
 	<-waitc
+}
+```
+
+# Generating SSL Certificates for gRPC
+
+For testing purposes, we'll generate self-signed certificates. In a production environment, you'd use certificates from a trusted Certificate Authority.
+
+1. Generate a private key for the Certificate Authority (CA):
+   ```
+   openssl genrsa -out ca.key 2048
+   ```
+
+2. Generate a CA certificate:
+   ```
+   openssl req -new -x509 -days 365 -key ca.key -out ca.crt
+   ```
+
+3. Generate a private key for the server:
+   ```
+   openssl genrsa -out server.key 2048
+   ```
+
+4. Create a certificate signing request (CSR) for the server:
+   ```
+   openssl req -new -key server.key -out server.csr
+   ```
+
+5. Sign the server's CSR with the CA certificate:
+   ```
+   openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt
+   ```
+
+You now have the following files:
+- `ca.key`: CA private key
+- `ca.crt`: CA certificate
+- `server.key`: Server private key
+- `server.crt`: Server certificate
+
+Keep the `.key` files secure and don't share them. The `.crt` files are public and can be distributed.
+
+```go
+package main
+
+import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	pb "path/to/your/generated/proto" // Replace with the actual path
+)
+
+// Server implementation remains the same as before
+
+func main() {
+	// Start server
+	lis, err := net.Listen("tcp", ":50051")
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	// Load server's certificate and private key
+	serverCert, err := tls.LoadX509KeyPair("server.crt", "server.key")
+	if err != nil {
+		log.Fatalf("failed to load server certificates: %v", err)
+	}
+
+	// Create the TLS credentials
+	creds := credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+	})
+
+	s := grpc.NewServer(grpc.Creds(creds))
+	pb.RegisterJSONExchangeServer(s, &server{})
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	// Client code
+	// Load the CA's certificate
+	caCert, err := ioutil.ReadFile("ca.crt")
+	if err != nil {
+		log.Fatalf("failed to read CA certificate: %v", err)
+	}
+
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(caCert) {
+		log.Fatalf("failed to add CA certificate to pool")
+	}
+
+	// Load client's certificate and private key
+	clientCert, err := tls.LoadX509KeyPair("client.crt", "client.key")
+	if err != nil {
+		log.Fatalf("failed to load client certificates: %v", err)
+	}
+
+	// Create the TLS credentials for the client
+	clientCreds := credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{clientCert},
+		RootCAs:      certPool,
+	})
+
+	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(clientCreds))
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	client := pb.NewJSONExchangeClient(conn)
+
+	// The rest of the client code remains the same as before
+	// ...
+
+	// Unary RPC example with SSL
+	data := map[string]interface{}{
+		"message": "Hello, Secure Server!",
+		"number":  42,
+	}
+	jsonStruct, err := structpb.NewStruct(data)
+	if err != nil {
+		log.Fatalf("failed to create struct: %v", err)
+	}
+	resp, err := client.UnaryExchange(context.Background(), &pb.JSONRequest{Data: jsonStruct})
+	if err != nil {
+		log.Fatalf("UnaryExchange failed: %v", err)
+	}
+	fmt.Printf("Secure UnaryExchange response: %v\n", resp.Data.AsMap())
+
+	// The rest of the RPC calls (streaming, etc.) would be implemented similarly
 }
 ```
