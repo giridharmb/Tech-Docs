@@ -633,3 +633,77 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 - **Compatibility:** Ensure the license is compatible with other software or libraries you're using.
 - **Community Building:** Some licenses are better for building open-source communities.
 - **Legal Protection:** Consider the level of legal protection you need for your software.
+
+# SSL/TLS Encryption Process
+
+## Overview
+
+This repository explains the Secure Sockets Layer (SSL) and Transport Layer Security (TLS) encryption process, which is fundamental to secure communication on the internet, particularly when accessing HTTPS websites.
+
+## What is SSL/TLS Encryption?
+
+SSL/TLS encryption is a security protocol that provides privacy, authentication, and integrity to internet communications. It's the technology that creates a secure, encrypted connection between a web browser and a web server, ensuring that all data passed between them remains private and integral.
+
+## Detailed Explanation
+
+The SSL/TLS encryption process involves the following steps when you access an HTTPS website:
+
+1. **Initiating the Connection**
+   - Browser initiates connection to web server
+   - HTTPS in URL indicates SSL/TLS should be used
+
+2. **SSL/TLS Handshake**
+   a) **Client Hello**
+      - Client sends supported SSL/TLS versions, cipher suites, and Client Random
+   
+   b) **Server Hello and Certificate**
+      - Server responds with chosen version, cipher suite, Server Random, and SSL certificate
+   
+   c) **Certificate Verification**
+      - Client verifies server's certificate with a trusted Certificate Authority (CA)
+   
+   d) **Key Exchange**
+      - Client generates and sends encrypted Pre-Master Secret
+      - Both sides generate Master Secret
+   
+   e) **Finished**
+      - Both sides send encrypted "Finished" message
+
+3. **Secure Communication Established**
+   - Encrypted connection is set up
+   - Session keys derived from Master Secret
+
+4. **Data Encryption and Transmission**
+   - All data encrypted using session keys (typically with symmetric encryption)
+
+5. **Decryption at Endpoints**
+   - Client and server decrypt data using session keys
+
+## Key Points
+
+- Handshake uses asymmetric encryption for key exchange
+- Data transmission uses symmetric encryption for efficiency
+- Process ensures authentication, confidentiality, and integrity
+- Happens automatically when accessing HTTPS sites
+
+## Importance of SSL/TLS Encryption
+
+SSL/TLS encryption is crucial for:
+- Protecting sensitive information (passwords, credit card details, etc.)
+- Verifying the authenticity of websites
+- Maintaining data integrity during transmission
+- Building trust with users and customers
+
+## Further Reading
+
+- [RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3](https://tools.ietf.org/html/rfc8446)
+- [OWASP Transport Layer Protection Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html)
+- [Mozilla SSL Configuration Generator](https://ssl-config.mozilla.org/)
+
+## Contributing
+
+We welcome contributions to improve this explanation. Please submit pull requests or open issues for any corrections or additional information.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
