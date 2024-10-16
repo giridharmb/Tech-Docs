@@ -710,6 +710,69 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## GRPC Server And Client
 
+> Initial Setup
+
+```bash
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+```
+
+> In Your Project (Where you have your *.proto file) >>
+
+```bash
+go get -u -v google.golang.org/grpc
+go get -u -v google.golang.org/protobuf/types/known/structpb
+```
+
+For Example, I have `json_exchange.proto` >
+
+```go
+// json_exchange.proto
+syntax = "proto3";
+
+package jsonexchange;
+
+option go_package = "./jsonexchange";
+
+import "google/protobuf/struct.proto";
+
+service JSONExchange {
+  // Unary RPC
+  rpc UnaryExchange (JSONRequest) returns (JSONResponse) {}
+
+  // Server Streaming RPC
+  rpc ServerStreamingExchange (JSONRequest) returns (stream JSONResponse) {}
+
+  // Client Streaming RPC
+  rpc ClientStreamingExchange (stream JSONRequest) returns (JSONResponse) {}
+
+  // Bidirectional Streaming RPC
+  rpc BidirectionalStreamingExchange (stream JSONRequest) returns (stream JSONResponse) {}
+}
+
+message JSONRequest {
+  google.protobuf.Struct data = 1;
+}
+
+message JSONResponse {
+  google.protobuf.Struct data = 1;
+}
+```
+
+So running this command >
+
+`protoc --go_out=. --go-grpc_out=. json_exchange.proto` > Will generate the following files under `jsonexchange` directory
+
+`l -l jsonexchange`
+
+```bash
+total 48
+drwxr-xr-x   4 user1  staff   128B Oct 15 22:23 .
+drwxr-xr-x  36 user1  staff   1.1K Oct 15 22:23 ..
+-rw-r--r--   1 user1  staff   8.9K Oct 15 22:23 json_exchange.pb.go
+-rw-r--r--   1 user1  staff    11K Oct 15 22:23 json_exchange_grpc.pb.go
+```
+
 # gRPC Server and Client in Go
 
 ## Overview
